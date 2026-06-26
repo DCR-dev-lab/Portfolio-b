@@ -11,9 +11,10 @@ const profileRoutes = require("./routes/profile.routes");
 // Clean, basic array without complex RegEx that won't break your router
 const allowedOrigins = [
   "http://localhost:5173",
-  "http://127.0.0.1:5173"
-  "http://localhost:4173/"
-  "https://dcr-portfolio.vercel.app/"
+  "http://127.0.0.1:5173",
+  "http://localhost:4173/",
+  "https://dcr-portfolio.vercel.app/",
+  "https://dcrportfolio.vercel.app/",
 ];
 
 app.use(
