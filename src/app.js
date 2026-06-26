@@ -12,7 +12,8 @@ const profileRoutes = require("./routes/profile.routes");
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173"
-  // Add your final Vercel production URL here once you have it!
+  "http://localhost:4173/"
+  "https://dcr-portfolio.vercel.app/"
 ];
 
 app.use(
