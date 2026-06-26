@@ -8,7 +8,29 @@ const projectRoutes = require("./routes/project.routes");
 const skillRoutes = require("./routes/skill.routes");
 const profileRoutes = require("./routes/profile.routes");
 
-app.use(cors({ methods: ["GET", "POST", "PUT", "DELETE"] }));
+// Clean, basic array without complex RegEx that won't break your router
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+  // Add your final Vercel production URL here once you have it!
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or postman)
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
 app.use(express.json());
 
 app.use("/api", adminRoutes);
