@@ -21,7 +21,7 @@ npm install
 ### 2. Configure environment
 Copy the example file and update the values:
 ```bash
-copy .env.example .env
+copy .env
 ```
 
 Example:
@@ -49,15 +49,3 @@ npm start
 - GET /api/skills
 - Admin routes for managing profile, projects, and skills
 
-## Deployment
-Deploy this backend to Render, Railway, Fly.io, or any Node.js hosting service.
-
-Set these environment variables in your hosting platform:
-- PORT
-- MONGO_URI
-- ADMIN_SECRET
-- JWT_SECRET
-
-## Notes
-- A live MongoDB database is required for the backend to function.
-- The frontend should point to this backend using the VITE_API_URL environment variable.
