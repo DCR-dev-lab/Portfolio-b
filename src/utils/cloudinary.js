@@ -33,19 +33,29 @@ function getCloudinaryClient() {
  */
 function getCloudinaryPublicId(url) {
   if (!url || typeof url !== "string") return null;
-  if (!url.includes("cloudinary.com")) return null;
 
   try {
-    const parts = url.split("/upload/");
+    const parsed = new URL(url.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (parsed.hostname !== "res.cloudinary.com") return null;
+
+    const configuredCloud = process.env.CLOUDINARY_CLOUD_NAME;
+    const rawPathSegments = parsed.pathname.split("/").filter(Boolean);
+    if (configuredCloud && rawPathSegments[0] !== configuredCloud) {
+      return null;
+    }
+
+    const parts = parsed.pathname.split("/upload/");
     if (parts.length < 2) return null;
 
-    let path = parts[1].split("?")[0].split("#")[0];
+    let path = parts[1];
     const segments = path.split("/");
     const cleanSegments = [];
     let passedPrefixes = false;
 
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i];
+      if (!seg || seg === "." || seg === "..") continue;
 
       if (!passedPrefixes) {
         // Skip version segment (e.g. v1732452341)

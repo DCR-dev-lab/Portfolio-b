@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const adminGuard = require("../middleware/admin.guard");
-const { adminLogin } = require("../controllers/admin.auth.controller");
+const { adminLogin, adminLogout } = require("../controllers/admin.auth.controller");
 
 const {
   createProject,
@@ -29,11 +29,26 @@ const {
   clearAuditLogs,
 } = require("../controllers/audit.controller");
 
-// 🔓 Login route (NO middleware)
-router.post("/admin/login", adminLogin);
+const rateLimit = require("express-rate-limit");
+
+// Brute-force protection: 5 attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many login attempts. Please try again after 15 minutes.",
+  },
+});
+
+// 🔓 Login route (guarded by rate limiter)
+router.post("/admin/login", loginLimiter, adminLogin);
 
 // 🔐 Protect everything below
 router.use("/admin", adminGuard);
+
+router.post("/admin/logout", adminLogout);
 
 // Projects
 router.post("/admin/dashboard/projects", createProject);

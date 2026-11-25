@@ -23,7 +23,8 @@ const logAudit = async (action, entity, entityId = null, entityName = null, deta
  */
 const getAuditLogs = async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const parsed = parseInt(req.query.limit, 10);
+    const limit = Number.isInteger(parsed) ? Math.max(1, Math.min(parsed, 200)) : 50;
     const logs = await AuditLog.find()
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -41,6 +42,7 @@ const getAuditLogs = async (req, res) => {
 const clearAuditLogs = async (req, res) => {
   try {
     await AuditLog.deleteMany({});
+    await logAudit("CLEAR_AUDIT_LOGS", "AuditLog", null, "Audit log cleared");
     res.json({ message: "Audit log cleared." });
   } catch (err) {
     res.status(500).json({ message: "Failed to clear audit logs" });

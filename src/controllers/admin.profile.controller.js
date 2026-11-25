@@ -1,6 +1,22 @@
 const Profile = require("../models/profile.model");
 const { logAudit } = require("./audit.controller");
 const { deleteCloudinaryImage } = require("../utils/cloudinary");
+const { pickFields } = require("../utils/sanitize");
+
+const ALLOWED_PROFILE_FIELDS = [
+  "fullName",
+  "title",
+  "shortIntro",
+  "profilePictureUrl",
+  "resumeUrl",
+  "aboutMe",
+  "email",
+  "phone",
+  "location",
+  "homeProjectsCount",
+  "homeSkillsPerCategory",
+];
+const ALLOWED_SOCIAL_FIELDS = ["github", "linkedin", "twitter", "instagram"];
 
 const getAdminProfile = async (req, res) => {
   try {
@@ -18,20 +34,30 @@ const updateAdminProfile = async (req, res) => {
   try {
     const existingProfile = await Profile.findOne({});
     const oldAvatar = existingProfile?.profilePictureUrl;
-    const newAvatar = req.body?.profilePictureUrl;
 
-    // If avatar was replaced, clean up the old asset in Cloudinary
+    const safePayload = pickFields(req.body, ALLOWED_PROFILE_FIELDS);
+    if (req.body?.socialLinks && typeof req.body.socialLinks === "object") {
+      safePayload.socialLinks = pickFields(req.body.socialLinks, ALLOWED_SOCIAL_FIELDS);
+    }
+
+    const updatedProfile = await Profile.findOneAndUpdate({}, safePayload, {
+      new: true,
+      upsert: true,
+      runValidators: true,
+    });
+
+    // Clean up old Cloudinary avatar only AFTER database update succeeds
+    const newAvatar = updatedProfile?.profilePictureUrl;
     if (newAvatar && oldAvatar && newAvatar !== oldAvatar) {
       await deleteCloudinaryImage(oldAvatar);
     }
 
-    const updatedProfile = await Profile.findOneAndUpdate({}, req.body, {
-      new: true,
-      upsert: true,
-    });
     await logAudit("UPDATE_PROFILE", "Profile", updatedProfile._id?.toString(), updatedProfile.fullName);
     res.status(200).json(updatedProfile);
   } catch (error) {
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: error.message });
   }
 };

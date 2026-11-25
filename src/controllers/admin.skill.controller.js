@@ -1,13 +1,20 @@
 const Skill = require("../models/skill.model");
 const { logAudit } = require("./audit.controller");
+const { pickFields } = require("../utils/sanitize");
+
+const ALLOWED_SKILL_FIELDS = ["name", "proficiency", "category", "iconKeyword"];
 
 const createSkill = async (req, res) => {
   try {
-    const newSkill = new Skill(req.body);
+    const safePayload = pickFields(req.body, ALLOWED_SKILL_FIELDS);
+    const newSkill = new Skill(safePayload);
     const savedSkill = await newSkill.save();
     await logAudit("CREATE_SKILL", "Skill", savedSkill._id.toString(), savedSkill.name);
     res.status(201).json(savedSkill);
   } catch (error) {
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -41,8 +48,11 @@ const deleteSkillById = async (req, res) => {
 const updateSkillById = async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedSkill = await Skill.findByIdAndUpdate(id, req.body, {
+    const safePayload = pickFields(req.body, ALLOWED_SKILL_FIELDS);
+
+    const updatedSkill = await Skill.findByIdAndUpdate(id, safePayload, {
       new: true,
+      runValidators: true,
     });
     if (!updatedSkill) {
       return res.status(404).json({ message: "Skill not found" });
@@ -52,6 +62,9 @@ const updateSkillById = async (req, res) => {
   } catch (error) {
     if (error.name === "CastError") {
       return res.status(400).json({ message: "Invalid skill ID format" });
+    }
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
     }
     res.status(500).json({ message: error.message });
   }

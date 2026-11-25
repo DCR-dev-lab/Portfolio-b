@@ -5,6 +5,8 @@ const skillsSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 80,
     },
     proficiency: {
       type: Number,
@@ -15,10 +17,14 @@ const skillsSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 80,
     },
     iconKeyword: {
       type: String,
       required: false,
+      trim: true,
+      maxlength: 60,
     },
   },
   { timestamps: true }

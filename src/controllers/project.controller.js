@@ -19,7 +19,10 @@ const getProjectsById = async (req, res) => {
     }
     res.status(200).json(projectData);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid project ID format" });
+    }
+    res.status(500).json({ message: "Failed to fetch project" });
   }
 };
 
