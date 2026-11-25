@@ -42,6 +42,14 @@ const projectSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

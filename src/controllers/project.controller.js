@@ -1,9 +1,10 @@
 const project = require("../models/project.model");
+const { sortProjects } = require("../utils/sortProjects");
 
 const getAllProjects = async (req, res) => {
   try {
     const projects = await project.find({});
-    res.status(200).json(projects ?? []);
+    res.status(200).json(sortProjects(projects ?? []));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

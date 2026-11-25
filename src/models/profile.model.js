@@ -58,6 +58,21 @@ const profileSchema = new mongoose.Schema(
       twitter: { type: String },
       instagram: { type: String },
     },
+
+    /* ===== Homepage Display Settings ===== */
+    homeProjectsCount: {
+      type: Number,
+      default: 7,
+      min: 1,
+      max: 20,
+    },
+
+    homeSkillsPerCategory: {
+      type: Number,
+      default: 8,
+      min: 1,
+      max: 20,
+    },
   },
   { timestamps: true }
 );

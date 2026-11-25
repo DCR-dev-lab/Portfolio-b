@@ -8,6 +8,7 @@ const adminLogin = (req, res) => {
   }
 
   if (key !== process.env.ADMIN_SECRET) {
+    console.error("Invalid admin key attempt:", key);
     return res.status(401).json({ message: "Invalid admin key" });
   }
 

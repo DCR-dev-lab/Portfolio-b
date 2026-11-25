@@ -9,6 +9,7 @@ const {
   getAllProjects,
   deleteProjectById,
   updateProjectById,
+  reorderProjects,
 } = require("../controllers/admin.project.controller");
 
 const {
@@ -23,6 +24,11 @@ const {
   updateAdminProfile,
 } = require("../controllers/admin.profile.controller");
 
+const {
+  getAuditLogs,
+  clearAuditLogs,
+} = require("../controllers/audit.controller");
+
 // 🔓 Login route (NO middleware)
 router.post("/admin/login", adminLogin);
 
@@ -32,6 +38,7 @@ router.use("/admin", adminGuard);
 // Projects
 router.post("/admin/dashboard/projects", createProject);
 router.get("/admin/dashboard/projects", getAllProjects);
+router.patch("/admin/dashboard/projects/reorder", reorderProjects);
 router.delete("/admin/dashboard/projects/:id", deleteProjectById);
 router.put("/admin/dashboard/projects/:id", updateProjectById);
 
@@ -44,5 +51,9 @@ router.put("/admin/dashboard/skills/:id", updateSkillById);
 // Profile
 router.get("/admin/profile", getAdminProfile);
 router.put("/admin/profile", updateAdminProfile);
+
+// Audit Log
+router.get("/admin/audit-log", getAuditLogs);
+router.delete("/admin/audit-log", clearAuditLogs);
 
 module.exports = router;

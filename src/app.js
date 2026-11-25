@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://localhost:4173",
   "https://dcr-portfolio.vercel.app",
   "https://dcrportfolio.vercel.app",
+  "https://resonant-helpful-gerbil.ngrok-free.dev/",
 ];
 
 const normalizeOrigin = (value) => (value ? value.replace(/\/+$/, "") : value);
@@ -25,7 +26,8 @@ app.use(
       const isAllowedOrigin =
         !origin ||
         allowedOrigins.includes(normalizedOrigin) ||
-        (normalizedOrigin && /\.(vercel\.app|onrender\.com)$/i.test(normalizedOrigin));
+        (normalizedOrigin &&
+          /\.(vercel\.app|onrender\.com)$/i.test(normalizedOrigin));
 
       if (isAllowedOrigin) {
         callback(null, true);
@@ -36,7 +38,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 app.use(express.json());
