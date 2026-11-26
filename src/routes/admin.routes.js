@@ -7,6 +7,7 @@ const { adminLogin, adminLogout } = require("../controllers/admin.auth.controlle
 const {
   createProject,
   getAllProjects,
+  getProjectById,
   deleteProjectById,
   updateProjectById,
   reorderProjects,
@@ -26,6 +27,8 @@ const {
 
 const {
   getAuditLogs,
+  restoreFromAuditLog,
+  revertFromAuditLog,
   clearAuditLogs,
 } = require("../controllers/audit.controller");
 
@@ -54,6 +57,7 @@ router.post("/admin/logout", adminLogout);
 router.post("/admin/dashboard/projects", createProject);
 router.get("/admin/dashboard/projects", getAllProjects);
 router.patch("/admin/dashboard/projects/reorder", reorderProjects);
+router.get("/admin/dashboard/projects/:id", getProjectById);
 router.delete("/admin/dashboard/projects/:id", deleteProjectById);
 router.put("/admin/dashboard/projects/:id", updateProjectById);
 
@@ -69,6 +73,8 @@ router.put("/admin/profile", updateAdminProfile);
 
 // Audit Log
 router.get("/admin/audit-log", getAuditLogs);
+router.post("/admin/audit-log/:id/restore", restoreFromAuditLog);
+router.post("/admin/audit-log/:id/revert", revertFromAuditLog);
 router.delete("/admin/audit-log", clearAuditLogs);
 
 module.exports = router;

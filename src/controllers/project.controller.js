@@ -3,7 +3,7 @@ const { sortProjects } = require("../utils/sortProjects");
 
 const getAllProjects = async (req, res) => {
   try {
-    const projects = await project.find({});
+    const projects = await project.find({ isPublished: { $ne: false } });
     res.status(200).json(sortProjects(projects ?? []));
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -14,7 +14,7 @@ const getProjectsById = async (req, res) => {
   try {
     const { id } = req.params;
     const projectData = await project.findById(id);
-    if (!projectData) {
+    if (!projectData || projectData.isPublished === false) {
       return res.status(404).json({ message: "Project not found" });
     }
     res.status(200).json(projectData);

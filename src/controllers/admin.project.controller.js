@@ -3,12 +3,14 @@ const { logAudit } = require("./audit.controller");
 const { deleteCloudinaryImage } = require("../utils/cloudinary");
 const { sortProjects } = require("../utils/sortProjects");
 const { pickFields } = require("../utils/sanitize");
+const { computeDiff, extractPreviousValues } = require("../utils/diff");
 
 const ALLOWED_PROJECT_FIELDS = [
   "title",
   "shortDescription",
   "longDescription",
   "imageUrl",
+  "images",
   "projectUrl",
   "technologies",
   "category",
@@ -17,6 +19,7 @@ const ALLOWED_PROJECT_FIELDS = [
   "githubUrl",
   "featured",
   "order",
+  "isPublished",
 ];
 
 // Create a new project
@@ -48,6 +51,24 @@ exports.getAllProjects = async (req, res) => {
 
     res.status(200).json(sortProjects(projects));
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get single project by ID (includes drafts)
+
+exports.getProjectById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const found = await project.findById(id);
+    if (!found) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    res.status(200).json(found);
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid project ID format" });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -101,12 +122,10 @@ exports.deleteProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    // Clean up Cloudinary asset if present
-    if (deletedProject.imageUrl) {
-      await deleteCloudinaryImage(deletedProject.imageUrl);
-    }
-
-    await logAudit("DELETE_PROJECT", "Project", id, deletedProject.title);
+    // Note: Cloudinary asset is preserved while the DELETE_PROJECT snapshot exists
+    // so one-click Restore works; un-restored images are cleaned up when audit logs are cleared.
+    const snapshot = pickFields(deletedProject.toObject(), ALLOWED_PROJECT_FIELDS);
+    await logAudit("DELETE_PROJECT", "Project", id, deletedProject.title, { snapshot });
     res.status(200).json({ message: "Project deleted successfully" });
   } catch (error) {
     if (error.name === "CastError") {
@@ -131,19 +150,34 @@ exports.updateProjectById = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
+    const before = existingProject.toObject();
     const oldImageUrl = existingProject.imageUrl;
+    const oldImages = Array.isArray(existingProject.images) ? existingProject.images : [];
     const safePayload = pickFields(req.body, ALLOWED_PROJECT_FIELDS);
 
     Object.assign(existingProject, safePayload);
     const updatedProject = await existingProject.save();
 
-    // Clean up old Cloudinary asset only AFTER database save succeeds
+    // Clean up old Cloudinary assets only AFTER database save succeeds
     const newImageUrl = updatedProject.imageUrl;
-    if (newImageUrl && oldImageUrl && newImageUrl !== oldImageUrl) {
-      await deleteCloudinaryImage(oldImageUrl);
+    const newImages = Array.isArray(updatedProject.images) ? updatedProject.images : [];
+    const retainedSet = new Set([newImageUrl, ...newImages].filter(Boolean));
+    const removedUrls = [oldImageUrl, ...oldImages].filter(
+      (url) => url && !retainedSet.has(url)
+    );
+    for (const removedUrl of new Set(removedUrls)) {
+      await deleteCloudinaryImage(removedUrl);
     }
 
-    await logAudit("UPDATE_PROJECT", "Project", id, updatedProject.title);
+    const changes = computeDiff(before, updatedProject.toObject(), ALLOWED_PROJECT_FIELDS);
+    const previousValues = changes.length ? extractPreviousValues(before, changes) : null;
+    await logAudit(
+      "UPDATE_PROJECT",
+      "Project",
+      id,
+      updatedProject.title,
+      changes.length ? { changes, previousValues } : null
+    );
     res.status(200).json(updatedProject);
   } catch (error) {
     if (error.name === "CastError") {

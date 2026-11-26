@@ -1,6 +1,7 @@
 const crypto = require("node:crypto");
 const jwt = require("jsonwebtoken");
 const { revokeToken } = require("../utils/tokenRevocation");
+const { logAudit } = require("./audit.controller");
 
 /**
  * Constant-time comparison between user input and environment secret
@@ -13,9 +14,21 @@ function safeCompare(input, secret) {
   return crypto.timingSafeEqual(inputHash, secretHash);
 }
 
-const adminLogin = (req, res) => {
+function getClientMeta(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip =
+    (typeof forwarded === "string" && forwarded.split(",")[0].trim()) ||
+    req.ip ||
+    req.socket?.remoteAddress ||
+    "unknown";
+  const userAgent = String(req.headers["user-agent"] || "unknown").slice(0, 200);
+  return { ip, userAgent };
+}
+
+const adminLogin = async (req, res) => {
   const body = req.body && typeof req.body === "object" ? req.body : {};
   const { key } = body;
+  const meta = getClientMeta(req);
 
   if (!key || typeof key !== "string") {
     return res.status(400).json({ message: "Admin key required" });
@@ -30,7 +43,8 @@ const adminLogin = (req, res) => {
   }
 
   if (!safeCompare(key, adminSecret)) {
-    console.warn(`[Auth] Failed admin key attempt from IP: ${req.ip || req.socket.remoteAddress}`);
+    console.warn(`[Auth] Failed admin key attempt from IP: ${meta.ip}`);
+    await logAudit("LOGIN_FAILED", "Security", null, "Invalid key attempt", meta);
     return res.status(401).json({ message: "Invalid admin key" });
   }
 
@@ -41,13 +55,15 @@ const adminLogin = (req, res) => {
     audience: "portfolio-admin",
   });
 
+  await logAudit("LOGIN_SUCCESS", "Security", null, "Mod session started", meta);
   res.status(200).json({ token });
 };
 
-const adminLogout = (req, res) => {
+const adminLogout = async (req, res) => {
   if (req.adminAuth?.jti) {
     revokeToken(req.adminAuth.jti, req.adminAuth.exp);
   }
+  await logAudit("LOGOUT", "Security", null, "Mod session ended", getClientMeta(req));
   res.status(200).json({ message: "Logged out successfully" });
 };
 

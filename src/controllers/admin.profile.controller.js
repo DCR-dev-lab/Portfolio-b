@@ -2,6 +2,7 @@ const Profile = require("../models/profile.model");
 const { logAudit } = require("./audit.controller");
 const { deleteCloudinaryImage } = require("../utils/cloudinary");
 const { pickFields } = require("../utils/sanitize");
+const { computeDiff, extractPreviousValues } = require("../utils/diff");
 
 const ALLOWED_PROFILE_FIELDS = [
   "fullName",
@@ -52,7 +53,33 @@ const updateAdminProfile = async (req, res) => {
       await deleteCloudinaryImage(oldAvatar);
     }
 
-    await logAudit("UPDATE_PROFILE", "Profile", updatedProfile._id?.toString(), updatedProfile.fullName);
+    const beforeDoc = existingProfile ? existingProfile.toObject() : {};
+    const afterDoc = updatedProfile.toObject();
+    const changes = [
+      ...computeDiff(beforeDoc, afterDoc, ALLOWED_PROFILE_FIELDS),
+      ...computeDiff(
+        beforeDoc.socialLinks || {},
+        afterDoc.socialLinks || {},
+        ALLOWED_SOCIAL_FIELDS
+      ).map((c) => ({ ...c, field: `socialLinks.${c.field}` })),
+    ];
+
+    const previousValues = changes.length
+      ? {
+          ...extractPreviousValues(beforeDoc, changes),
+          ...(changes.some((c) => c.field.startsWith("socialLinks."))
+            ? { socialLinks: extractPreviousValues(beforeDoc.socialLinks || {}, changes, "socialLinks.") }
+            : {}),
+        }
+      : null;
+
+    await logAudit(
+      "UPDATE_PROFILE",
+      "Profile",
+      updatedProfile._id?.toString(),
+      updatedProfile.fullName,
+      changes.length ? { changes, previousValues } : null
+    );
     res.status(200).json(updatedProfile);
   } catch (error) {
     if (error.name === "ValidationError") {

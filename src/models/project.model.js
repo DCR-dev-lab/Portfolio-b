@@ -31,6 +31,17 @@ const projectSchema = new mongoose.Schema(
         message: "imageUrl must use http://, https://, or a safe relative path",
       },
     },
+    images: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (v) =>
+          Array.isArray(v) &&
+          v.length <= 15 &&
+          v.every((url) => typeof url === "string" && url.length <= 2048 && isSafeHttpUrl(url)),
+        message: "images must contain at most 15 valid http://, https://, or relative URLs",
+      },
+    },
     projectUrl: {
       type: String,
       required: true,
@@ -90,6 +101,10 @@ const projectSchema = new mongoose.Schema(
       default: 0,
       min: 0,
       max: 10000,
+    },
+    isPublished: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }
