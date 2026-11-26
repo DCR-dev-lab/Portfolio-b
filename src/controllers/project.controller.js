@@ -3,8 +3,10 @@ const { sortProjects } = require("../utils/sortProjects");
 
 const getAllProjects = async (req, res) => {
   try {
-    const projects = await project.find({ isPublished: { $ne: false } });
-    res.status(200).json(sortProjects(projects ?? []));
+    // Filter in JS because global mongoose.set("sanitizeFilter", true) strips/wraps $ne operators in filter objects
+    const allProjects = await project.find({});
+    const published = allProjects.filter((p) => p.isPublished !== false);
+    res.status(200).json(sortProjects(published));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

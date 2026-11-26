@@ -88,6 +88,18 @@ const profileSchema = new mongoose.Schema(
     },
 
     /* ===== Homepage Display Settings ===== */
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+
+    availabilityText: {
+      type: String,
+      trim: true,
+      maxlength: 80,
+      default: "Available for new projects",
+    },
+
     homeProjectsCount: {
       type: Number,
       default: 7,

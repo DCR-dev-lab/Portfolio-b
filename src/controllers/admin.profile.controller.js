@@ -14,6 +14,8 @@ const ALLOWED_PROFILE_FIELDS = [
   "email",
   "phone",
   "location",
+  "isAvailable",
+  "availabilityText",
   "homeProjectsCount",
   "homeSkillsPerCategory",
 ];
